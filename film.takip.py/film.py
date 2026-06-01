@@ -142,7 +142,7 @@ while True:
         print("Sonuçlar raporum.txt dosyasına yazıldı.")
         
     elif secim == "6":
-        print("Programdan çıkılıyor. İyi günler dilerim hocam.")
+        print("Programdan çıkılıyor.")
         break
         
     else:
