@@ -1,0 +1,152 @@
+
+import sqlite3
+import random 
+
+
+veri_baglantisi = sqlite3.connect("izleme_listesi.db")
+imlec_nesnesi = veri_baglantisi.cursor()
+
+imlec_nesnesi.execute("CREATE TABLE IF NOT EXISTS Medyalar (id INTEGER PRIMARY KEY AUTOINCREMENT, film_adi TEXT, film_turu TEXT, izleme_durumu TEXT, film_puani REAL)")
+veri_baglantisi.commit() 
+
+
+
+def veri_ekle(ad, tur, durum, puan):
+    
+    imlec_nesnesi.execute(f"INSERT INTO Medyalar (film_adi, film_turu, izleme_durumu, film_puani) VALUES ('{ad}', '{tur}', '{durum}', {puan})")
+    veri_baglantisi.commit()
+
+
+def verileri_cek():
+    imlec_nesnesi.execute("SELECT film_adi, film_turu, izleme_durumu, film_puani FROM Medyalar")
+    gelen_datalar = imlec_nesnesi.fetchall() 
+    return gelen_datalar
+
+
+def durumu_degistir(secilen_film, yeni_durum):
+    imlec_nesnesi.execute(f"UPDATE Medyalar SET izleme_durumu = '{yeni_durum}' WHERE film_adi = '{secilen_film}'")
+    veri_baglantisi.commit()
+
+
+
+tur_sozlugum = {
+    "1": "Film",
+    "2": "Dizi",
+    "3": "Belgesel"
+}
+
+
+durum_kumesi = {"İzlenecek", "İzleniyor", "Tamamlandı"}
+
+
+
+print("**************************************************")
+print("\n\t Adı Soyadı: Beyza Kartal \n\t")
+print("**************************************************")
+
+
+
+while True:
+    print("\n--- MENÜ SEÇENEKLERİ ---")
+    print("1 -> Yeni Yapım Ekle")
+    print("2 -> Listeyi Ekrana Bas")
+    print("3 -> İzleme Durumunu Güncelle")
+    print("4 -> Şansıma Ne Çıkarsa İzle (Öneri)")
+    print("5 -> İstatistik Çıkar ve Dosyaya Kaydet")
+    print("6 -> Çıkış Yap")
+    
+    secim = input("Yapmak istediğiniz işlemin numarasını yazın: ")
+    
+    if secim == "1":
+        
+        adi = input("Film veya Dizi adını yazın: ").upper()
+        
+        print("1-Film, 2-Dizi, 3-Belgesel")
+        tur_numarasi = input("Tür numarasını girin: ")
+        turu = tur_sozlugum[tur_numarasi] 
+        
+        durumu = input("Durum girin (İzlenecek / İzleniyor / Tamamlandı): ")
+        
+        
+        if durumu in durum_kumesi:
+            print("Girdiğiniz durum kümede var, doğru.")
+        else:
+            print("Hatalı yazdınız ama yine de ekliyorum.")
+            
+        puani = float(input("10 üzerinden puan verin (Örn: 7.5): ")) 
+        
+        
+        veri_ekle(adi, turu, durumu, puani)
+        print("Kayıt başarılı bir şekilde veritabanına eklendi.")
+        
+    elif secim == "2":
+        ana_liste = verileri_cek() 
+        
+        if len(ana_liste) == 0:
+            print("Veritabanında hiç kayıt yok!")
+        else:
+            print("\n--- KAYITLI FİLMLERİNİZ ---")
+           
+            sayi_sayar = 1
+            for satir in ana_liste:
+                
+                print(str(sayi_sayar) + "- " + satir[0] + " [" + satir[1] + "] - Durum: " + satir[2] + " - Puan: " + str(satir[3]))
+                sayi_sayar = sayi_sayar + 1 # sayacı 1 arttır
+                
+    elif secim == "3":
+        guncellenecek_film = input("Durumu değişecek filmin adını BÜYÜK HARFLE yazın: ").upper()
+        yeni_izleme_durumu = input("Yeni durum ne olsun?: ")
+        
+        durumu_degistir(guncellenecek_film, yeni_izleme_durumu)
+        print("Güncelleme yapılmıştır.")
+        
+    elif secim == "4":
+        ana_liste = verileri_cek()
+        if len(ana_liste) == 0:
+            print("Öneri yapabilmek için önce film eklemelisiniz.")
+        else:
+           
+            eleman_sayisi = len(ana_liste)
+            rastgele_sayi = random.randint(0, eleman_sayisi - 1)
+            secilen_tuple = ana_liste[rastgele_sayi] # Listeden demet (tuple) çektik
+            print("\nBugün izlemeniz gereken yapım: " + secilen_tuple[0])
+            
+    elif secim == "5":
+        ana_liste = verileri_cek()
+        
+        
+        toplam_sayi = len(ana_liste)
+        puanlar_toplami = 0
+        bitenler = 0
+        
+        for film in ana_liste:
+            puanlar_toplami = puanlar_toplami + film[3] 
+            if film[2] == "Tamamlandı":
+                bitenler = bitenler + 1
+                
+        
+        ortalama_puan = puanlar_toplami / toplam_sayi
+        izleme_yuzdesi = (bitenler / toplam_sayi) * 100
+        
+        print("\n--- HESAPLANAN İSTATİSTİKLER ---")
+        print("Toplam İçerik Sayısı: " + str(toplam_sayi))
+        print("Genel Ortalama Puan: " + str(ortalama_puan))
+        print("Bitirme Yüzdeniz: %" + str(izleme_yuzdesi))
+        
+       
+        metin_dosyasi = open("raporum.txt", "w")
+        metin_dosyasi.write("TOPLAM: " + str(toplam_sayi) + "\n")
+        metin_dosyasi.write("ORTALAMA: " + str(ortalama_puan) + "\n")
+        metin_dosyasi.write("YUZDE: %" + str(izleme_yuzdesi) + "\n")
+        metin_dosyasi.close() 
+        print("Sonuçlar raporum.txt dosyasına yazıldı.")
+        
+    elif secim == "6":
+        print("Programdan çıkılıyor. İyi günler dilerim hocam.")
+        break
+        
+    else:
+        print("Yanlış tuşa bastınız, menüye geri yönlendiriliyorsunuz.")
+
+
+veri_baglantisi.close()
